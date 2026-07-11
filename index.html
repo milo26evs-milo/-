@@ -11,39 +11,126 @@
       #hint {
         position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
         color: #fff; font-family: sans-serif; font-size: 14px; opacity: 0.7;
-        pointer-events: none; text-shadow: 0 0 8px rgba(0,0,0,0.8);
+        pointer-events: none; text-shadow: 0 0 8px rgba(0,0,0,0.8); z-index: 10;
       }
 
+      #hud {
+        position: fixed; top: 16px; left: 16px; z-index: 10;
+        display: flex; flex-direction: column; gap: 8px;
+      }
       #stats {
-        position: fixed; top: 16px; left: 16px; color: #fff;
-        font-family: sans-serif; font-size: 13px; opacity: 0.85; line-height: 1.7;
-        text-shadow: 0 0 6px rgba(0,0,0,0.9); pointer-events: none;
+        color: #fff; font-family: sans-serif; font-size: 13px; opacity: 0.85;
+        line-height: 1.7; text-shadow: 0 0 6px rgba(0,0,0,0.9); pointer-events: none;
+      }
+      #xpRow { display: flex; align-items: center; gap: 8px; }
+      #xpLabel {
+        color: #fff; font-family: sans-serif; font-size: 12px; font-weight: 700;
+        text-shadow: 0 0 6px rgba(0,0,0,0.8); pointer-events: none;
+      }
+      #xpBar {
+        width: 140px; height: 12px; background: rgba(255,255,255,0.12);
+        border: 1px solid rgba(255,255,255,0.3); border-radius: 8px; overflow: hidden;
+      }
+      #xpFill {
+        height: 100%; width: 0%;
+        background: linear-gradient(90deg, #00e5ff, #ff2fd0);
+        transition: width 0.4s ease-out;
+      }
+
+      #dailyBest {
+        position: fixed; top: 16px; left: 50%; transform: translateX(-50%);
+        color: #ffd700; font-family: sans-serif; font-size: 13px; font-weight: 700;
+        text-shadow: 0 0 8px rgba(255,215,0,0.6); opacity: 0.9;
+        pointer-events: none; z-index: 10;
+      }
+
+      #muteBtn {
+        position: fixed; top: 12px; right: 16px; z-index: 10;
+        background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.25);
+        color: #fff; font-size: 20px; width: 44px; height: 44px; border-radius: 50%;
+        cursor: pointer;
       }
 
       #result {
-        position: fixed; top: 20%; left: 50%; transform: translate(-50%, -50%) scale(0);
+        position: fixed; top: 22%; left: 50%; transform: translate(-50%, -50%) scale(0);
         font-family: sans-serif; font-weight: 900; font-size: 140px;
         text-shadow: 0 0 20px currentColor, 0 0 50px currentColor;
-        pointer-events: none; display: none;
+        pointer-events: none; display: none; z-index: 6;
       }
       #result.pop {
         animation: popIn 0.55s cubic-bezier(.34, 1.56, .64, 1) forwards;
+      }
+
+      #rarityBadge {
+        position: fixed; top: 10%; left: 50%; transform: translate(-50%, -50%) scale(0);
+        font-family: sans-serif; font-weight: 900; font-size: 26px; letter-spacing: 2px;
+        text-shadow: 0 0 14px currentColor, 0 0 28px currentColor;
+        pointer-events: none; display: none; z-index: 6;
+      }
+      #rarityBadge.pop {
+        animation: popIn 0.5s cubic-bezier(.34, 1.56, .64, 1) forwards;
       }
 
       #combo {
         position: fixed; top: 40%; left: 50%; transform: translate(-50%, -50%) scale(0);
         font-family: sans-serif; font-weight: 800; font-size: 34px;
         color: #ff2fd0; text-shadow: 0 0 14px #ff2fd0, 0 0 28px #ff2fd0;
-        pointer-events: none; display: none;
+        pointer-events: none; display: none; z-index: 6;
       }
       #combo.pop {
         animation: popIn 0.45s ease-out forwards;
+      }
+
+      #nearMiss {
+        position: fixed; top: 47%; left: 50%; transform: translate(-50%, -50%) scale(0);
+        font-family: sans-serif; font-weight: 800; font-size: 38px; color: #ffab40;
+        text-shadow: 0 0 14px #ffab40; pointer-events: none; display: none; z-index: 6;
+      }
+      #nearMiss.pop {
+        animation: popIn 0.4s ease-out forwards;
+      }
+
+      #levelUp {
+        position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0);
+        font-family: sans-serif; font-weight: 900; font-size: 54px; color: #ffd700;
+        text-shadow: 0 0 20px #ffd700, 0 0 45px #ffae00;
+        pointer-events: none; display: none; z-index: 6;
+      }
+      #levelUp.pop {
+        animation: popIn 0.6s cubic-bezier(.34, 1.56, .64, 1) forwards;
+      }
+
+      #lightning {
+        position: fixed; top: 30%; left: 50%; transform: translate(-50%, -50%) scale(0);
+        font-family: sans-serif; font-weight: 900; font-size: 28px; color: #ffd700;
+        text-shadow: 0 0 18px #ffd700, 0 0 34px #fff700;
+        pointer-events: none; display: none; z-index: 6;
+      }
+      #lightning.pop {
+        animation: popIn 0.5s ease-out forwards;
       }
 
       @keyframes popIn {
         0%   { transform: translate(-50%, -50%) scale(0) rotate(-18deg); opacity: 0; }
         55%  { transform: translate(-50%, -50%) scale(1.35) rotate(8deg); opacity: 1; }
         100% { transform: translate(-50%, -50%) scale(1) rotate(0deg); opacity: 1; }
+      }
+
+      #edgePulse {
+        position: fixed; inset: 0; pointer-events: none; display: none; z-index: 3;
+      }
+      #edgePulse.active {
+        display: block;
+        animation: rainbowPulse 1.6s linear infinite;
+      }
+      @keyframes rainbowPulse {
+        0%   { box-shadow: inset 0 0 70px 18px hsl(0, 100%, 60%); }
+        16%  { box-shadow: inset 0 0 70px 18px hsl(60, 100%, 60%); }
+        33%  { box-shadow: inset 0 0 70px 18px hsl(120, 100%, 60%); }
+        50%  { box-shadow: inset 0 0 70px 18px hsl(180, 100%, 60%); }
+        66%  { box-shadow: inset 0 0 70px 18px hsl(240, 100%, 60%); }
+        83%  { box-shadow: inset 0 0 70px 18px hsl(300, 100%, 60%); }
+        100% { box-shadow: inset 0 0 70px 18px hsl(360, 100%, 60%); }
       }
 
       #flash {
@@ -65,10 +152,24 @@
     </script>
   </head>
   <body>
-    <div id="stats"></div>
+    <div id="hud">
+      <div id="stats"></div>
+      <div id="xpRow">
+        <span id="xpLabel">Lv.1</span>
+        <div id="xpBar"><div id="xpFill"></div></div>
+      </div>
+    </div>
+    <div id="dailyBest"></div>
+    <button id="muteBtn" aria-label="ミュート切り替え">🔊</button>
+
+    <div id="edgePulse"></div>
+    <div id="flash"></div>
+    <div id="rarityBadge"></div>
     <div id="result"></div>
     <div id="combo"></div>
-    <div id="flash"></div>
+    <div id="nearMiss">😲 おしい!</div>
+    <div id="lightning"></div>
+    <div id="levelUp">✨ LEVEL UP! ✨</div>
     <div id="hint">🎲 画面をタップ/クリックしてサイコロを振ろう!</div>
 
     <script type="module">
@@ -79,6 +180,32 @@
       const comboEl = document.getElementById('combo');
       const flashEl = document.getElementById('flash');
       const statsEl = document.getElementById('stats');
+      const rarityEl = document.getElementById('rarityBadge');
+      const nearMissEl = document.getElementById('nearMiss');
+      const levelUpEl = document.getElementById('levelUp');
+      const lightningEl = document.getElementById('lightning');
+      const edgePulseEl = document.getElementById('edgePulse');
+      const dailyBestEl = document.getElementById('dailyBest');
+      const xpFillEl = document.getElementById('xpFill');
+      const xpLabelEl = document.getElementById('xpLabel');
+      const muteBtn = document.getElementById('muteBtn');
+
+      // ===== -1. ミュート設定 =====
+      let muted = localStorage.getItem('dice_muted') === '1';
+      function updateMuteBtn() {
+        muteBtn.textContent = muted ? '🔇' : '🔊';
+      }
+      updateMuteBtn();
+      muteBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        muted = !muted;
+        localStorage.setItem('dice_muted', muted ? '1' : '0');
+        updateMuteBtn();
+        if (muted) {
+          stopDrumRoll();
+          if ('speechSynthesis' in window) speechSynthesis.cancel();
+        }
+      });
 
       // ===== 0. 効果音(Web Audio API、外部ファイル不要) =====
       let audioCtx = null;
@@ -104,6 +231,7 @@
       }
 
       function playThrowSound() {
+        if (muted) return;
         const ctx = getAudioCtx();
         const now = ctx.currentTime;
         const osc = ctx.createOscillator();
@@ -120,6 +248,7 @@
 
       let lastImpactTime = 0;
       function playImpactSound(strength) {
+        if (muted) return;
         const ctx = getAudioCtx();
         const now = ctx.currentTime;
         if (now - lastImpactTime < 0.06) return;
@@ -129,6 +258,7 @@
       }
 
       function playResultFanfare(value) {
+        if (muted) return;
         const ctx = getAudioCtx();
         const now = ctx.currentTime;
         const notes = [523.25, 587.33, 659.25, 698.46, 783.99, 880.0, 987.77];
@@ -140,6 +270,75 @@
           const chordTime = now + value * 0.09 + 0.05;
           chord.forEach((f) => playTone(ctx, f, chordTime, 0.5, 'sine', 0.2));
         }
+      }
+
+      function playRecordFanfare() {
+        if (muted) return;
+        const ctx = getAudioCtx();
+        const now = ctx.currentTime;
+        const notes = [880, 1046.5, 1318.5, 1568, 2093];
+        notes.forEach((f, i) => playTone(ctx, f, now + i * 0.07, 0.25, 'triangle', 0.28));
+      }
+
+      // 太鼓のロール音(投げてから着地までノイズのトレモロを鳴らし、着地でピタッと止める)
+      function createNoiseBuffer(ctx, seconds) {
+        const bufferSize = Math.floor(ctx.sampleRate * seconds);
+        const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+        return buffer;
+      }
+
+      let drumRoll = null;
+      function startDrumRoll() {
+        if (muted) return;
+        const ctx = getAudioCtx();
+        const now = ctx.currentTime;
+        const noise = ctx.createBufferSource();
+        noise.buffer = createNoiseBuffer(ctx, 2);
+        noise.loop = true;
+        const bandpass = ctx.createBiquadFilter();
+        bandpass.type = 'bandpass';
+        bandpass.frequency.value = 220;
+        bandpass.Q.value = 0.9;
+        const gain = ctx.createGain();
+        gain.gain.setValueAtTime(0, now);
+        gain.gain.linearRampToValueAtTime(0.16, now + 0.08);
+        const lfo = ctx.createOscillator();
+        lfo.frequency.value = 16;
+        const lfoGain = ctx.createGain();
+        lfoGain.gain.value = 0.12;
+        lfo.connect(lfoGain).connect(gain.gain);
+        lfo.start(now);
+        noise.connect(bandpass).connect(gain).connect(ctx.destination);
+        noise.start(now);
+        drumRoll = { noise, gain, lfo };
+      }
+      function stopDrumRoll() {
+        if (!drumRoll) return;
+        const ctx = getAudioCtx();
+        const now = ctx.currentTime;
+        const { noise, gain, lfo } = drumRoll;
+        gain.gain.cancelScheduledValues(now);
+        gain.gain.setValueAtTime(gain.gain.value, now);
+        gain.gain.linearRampToValueAtTime(0, now + 0.03);
+        setTimeout(() => {
+          try { noise.stop(); lfo.stop(); } catch (e) { /* すでに停止済み */ }
+        }, 100);
+        drumRoll = null;
+      }
+
+      // 出目の読み上げ(Web Speech API)
+      const NUMBER_READINGS = ['いち', 'に', 'さん', 'し', 'ご', 'ろく'];
+      function speak(value) {
+        if (muted) return;
+        if (!('speechSynthesis' in window)) return;
+        speechSynthesis.cancel();
+        const utter = new SpeechSynthesisUtterance(`${NUMBER_READINGS[value - 1]}!`);
+        utter.lang = 'ja-JP';
+        utter.rate = 1.1;
+        utter.pitch = 1.15;
+        speechSynthesis.speak(utter);
       }
 
       // ===== 1. サイコロの目のテクスチャ(キャンバスで生成、ネオン風) =====
@@ -217,7 +416,8 @@
 
       // ===== 2. three.js: 見た目のセットアップ =====
       const scene = new THREE.Scene();
-      scene.background = new THREE.Color(0x0a0a16);
+      const BASE_BG = new THREE.Color(0x0a0a16);
+      scene.background = BASE_BG.clone();
 
       const camera = new THREE.PerspectiveCamera(
         50,
@@ -328,7 +528,7 @@
         return best;
       }
 
-      // ===== 5. カメラシェイク(着地の衝撃演出) =====
+      // ===== 5. カメラシェイク & ズームパンチ =====
       let shakeMagnitude = 0;
       let shakeTimeRemaining = 0;
       let shakeDuration = 0.001;
@@ -336,6 +536,12 @@
         shakeMagnitude = Math.max(shakeMagnitude, magnitude);
         shakeTimeRemaining = Math.max(shakeTimeRemaining, duration);
         shakeDuration = duration;
+      }
+
+      let zoomPunch = { active: false, timer: 0, duration: 0.45 };
+      function triggerZoomPunch() {
+        zoomPunch.active = true;
+        zoomPunch.timer = 0;
       }
 
       // ===== 6. パーティクル演出(バースト & 紙吹雪) =====
@@ -403,7 +609,132 @@
         });
       }
 
-      // ===== 8. 結果表示・コンボ・統計(ドーパミン増し増しポイント) =====
+      // ===== 8. レアリティ抽選(通常/レア/エピック/レジェンド) =====
+      const RARITY_COLOR = { rare: '#4fc3f7', epic: '#c07dff', legendary: '#ffd700' };
+      const RARITY_LABEL = { rare: '★ RARE ★', epic: '★★ EPIC ★★', legendary: '★★★ LEGENDARY ★★★' };
+      const RARITY_MULT = { normal: 1, rare: 1.3, epic: 1.7, legendary: 2.2 };
+      const RARITY_XP = { normal: 0, rare: 10, epic: 25, legendary: 50 };
+
+      function rollRarity(value, combo) {
+        const legendaryChance = 0.02 + (value === 6 ? 0.05 : 0) + (combo >= 3 ? 0.1 : 0);
+        const epicChance = 0.06 + (value >= 5 ? 0.06 : 0) + (combo >= 2 ? 0.08 : 0);
+        const rareChance = 0.18 + (value >= 4 ? 0.08 : 0);
+        const roll = Math.random();
+        if (roll < legendaryChance) return 'legendary';
+        if (roll < legendaryChance + epicChance) return 'epic';
+        if (roll < legendaryChance + epicChance + rareChance) return 'rare';
+        return 'normal';
+      }
+
+      function showRarityBadge(rarity) {
+        if (rarity === 'normal') {
+          rarityEl.style.display = 'none';
+          return;
+        }
+        rarityEl.textContent = RARITY_LABEL[rarity];
+        rarityEl.style.color = RARITY_COLOR[rarity];
+        rarityEl.style.display = 'block';
+        rarityEl.classList.remove('pop');
+        void rarityEl.offsetWidth;
+        rarityEl.classList.add('pop');
+      }
+
+      // ===== 9. 経験値・レベルアップ =====
+      let xp = Number(localStorage.getItem('dice_xp') || 0);
+      let level = Number(localStorage.getItem('dice_level') || 1);
+      function xpToNext(lv) { return 100 + (lv - 1) * 40; }
+      function updateXpBar() {
+        const need = xpToNext(level);
+        xpFillEl.style.width = `${Math.min(100, (xp / need) * 100)}%`;
+        xpLabelEl.textContent = `Lv.${level}`;
+      }
+      function celebrateLevelUp() {
+        levelUpEl.style.display = 'block';
+        levelUpEl.classList.remove('pop');
+        void levelUpEl.offsetWidth;
+        levelUpEl.classList.add('pop');
+        flashScreen(0.14);
+        spawnConfetti(diceMesh.position.clone(), 25);
+        setTimeout(() => { levelUpEl.style.display = 'none'; }, 1400);
+      }
+      function gainXp(amount) {
+        xp += amount;
+        let leveledUp = false;
+        while (xp >= xpToNext(level)) {
+          xp -= xpToNext(level);
+          level++;
+          leveledUp = true;
+        }
+        localStorage.setItem('dice_xp', xp);
+        localStorage.setItem('dice_level', level);
+        updateXpBar();
+        if (leveledUp) celebrateLevelUp();
+      }
+      updateXpBar();
+
+      // ===== 10. 本日の最高連続記録 =====
+      function todayStr() { return new Date().toISOString().slice(0, 10); }
+      let dailyBestDate = localStorage.getItem('dice_dailyDate') || '';
+      let dailyBestStreak = Number(localStorage.getItem('dice_dailyBestStreak') || 0);
+      if (dailyBestDate !== todayStr()) {
+        dailyBestDate = todayStr();
+        dailyBestStreak = 0;
+        localStorage.setItem('dice_dailyDate', dailyBestDate);
+        localStorage.setItem('dice_dailyBestStreak', '0');
+      }
+      function updateDailyBestUI() {
+        dailyBestEl.textContent = `本日の最高連続記録: x${dailyBestStreak}`;
+      }
+      updateDailyBestUI();
+      function celebrateNewRecord() {
+        lightningEl.textContent = '⚡ 自己ベスト更新! ⚡';
+        lightningEl.style.display = 'block';
+        lightningEl.classList.remove('pop');
+        void lightningEl.offsetWidth;
+        lightningEl.classList.add('pop');
+        setTimeout(() => { lightningEl.style.display = 'none'; }, 1400);
+        playRecordFanfare();
+      }
+      function checkDailyBest(combo) {
+        if (combo > dailyBestStreak) {
+          dailyBestStreak = combo;
+          localStorage.setItem('dice_dailyBestStreak', dailyBestStreak);
+          updateDailyBestUI();
+          celebrateNewRecord();
+        }
+      }
+
+      // ===== 11. ニアミス演出(5が出た時) =====
+      function showNearMiss() {
+        nearMissEl.style.display = 'block';
+        nearMissEl.classList.remove('pop');
+        void nearMissEl.offsetWidth;
+        nearMissEl.classList.add('pop');
+        shakeCamera(0.06, 0.2);
+        setTimeout(() => { nearMissEl.style.display = 'none'; }, 1000);
+      }
+
+      // ===== 12. 6連続時の画面演出(虹色パルス&色調変化) =====
+      let sixStreak = 0;
+      function updateSixStreakFX() {
+        if (sixStreak >= 3) {
+          edgePulseEl.classList.add('active');
+        } else {
+          edgePulseEl.classList.remove('active');
+        }
+        const tintAmount = Math.min(1, sixStreak * 0.15);
+        scene.background = BASE_BG.clone().lerp(new THREE.Color(0xffcc33), tintAmount);
+      }
+
+      // ===== 13. 6が出た瞬間のスローモーション =====
+      let sixSlowMo = { active: false, phase: 'idle', timer: 0 };
+      function triggerSixSlowMo() {
+        sixSlowMo.active = true;
+        sixSlowMo.phase = 'flight';
+        sixSlowMo.timer = 0;
+      }
+
+      // ===== 14. 結果表示・コンボ・統計(ドーパミン増し増しポイント) =====
       let lastValue = null;
       let comboCount = 0;
       let totalRolls = Number(localStorage.getItem('dice_totalRolls') || 0);
@@ -416,16 +747,22 @@
       }
       updateStats();
 
-      function reveal(value) {
+      function processReveal(value) {
         totalRolls++;
         if (value === lastValue) comboCount++; else comboCount = 1;
         lastValue = value;
         if (value === 6) sixCount++;
         if (comboCount > bestCombo) bestCombo = comboCount;
+        sixStreak = value === 6 ? sixStreak + 1 : 0;
         localStorage.setItem('dice_totalRolls', totalRolls);
         localStorage.setItem('dice_bestCombo', bestCombo);
         localStorage.setItem('dice_sixCount', sixCount);
         updateStats();
+        updateSixStreakFX();
+        checkDailyBest(comboCount);
+
+        const rarity = rollRarity(value, comboCount);
+        const mult = RARITY_MULT[rarity];
 
         const hue = (value - 1) / 6;
         const color = `hsl(${hue * 360}, 100%, 60%)`;
@@ -447,28 +784,47 @@
           comboEl.style.display = 'none';
         }
 
+        showRarityBadge(rarity);
+        if (value === 5) showNearMiss();
+
         flashScreen(hue);
-        spawnBurst(diceMesh.position.clone(), hue, value === 6 ? 80 : 40);
-        spawnConfetti(diceMesh.position.clone(), value === 6 ? 60 : 20);
-        shakeCamera(value === 6 ? 0.4 : 0.18, 0.45);
+        const particleCount = Math.min(140, Math.round((value === 6 ? 70 : 35) * mult));
+        const confettiCount = Math.min(90, Math.round((value === 6 ? 45 : 18) * mult));
+        spawnBurst(diceMesh.position.clone(), hue, particleCount);
+        spawnConfetti(diceMesh.position.clone(), confettiCount);
+        shakeCamera(Math.min(0.6, (value === 6 ? 0.4 : 0.18) * mult), 0.45);
+        triggerZoomPunch();
         playResultFanfare(value);
+        speak(value);
+        if (value === 6) triggerSixSlowMo();
+
+        gainXp(10 + comboCount * 3 + RARITY_XP[rarity] + (value === 6 ? 15 : 0));
+
         if (navigator.vibrate) {
           navigator.vibrate(value === 6 ? [30, 30, 30, 30, 30] : [40]);
         }
       }
 
-      // ===== 9. サイコロを振る =====
+      // ===== 15. サイコロを振る =====
       let settled = true;
       let settleTimer = 0;
       let frameCount = 0;
+      let throwId = 0;
       const trailMeshes = [];
 
       function throwDice() {
         getAudioCtx();
+        throwId++;
         resultEl.style.display = 'none';
         resultEl.classList.remove('pop');
         comboEl.style.display = 'none';
         comboEl.classList.remove('pop');
+        rarityEl.style.display = 'none';
+        rarityEl.classList.remove('pop');
+        nearMissEl.style.display = 'none';
+        nearMissEl.classList.remove('pop');
+        sixSlowMo.active = false;
+        sixSlowMo.phase = 'idle';
 
         diceBody.position.set(0, 5, 0);
         diceBody.velocity.set(0, 0, 0);
@@ -485,10 +841,11 @@
         settled = false;
         settleTimer = 0;
         playThrowSound();
+        startDrumRoll();
       }
       throwDice();
 
-      // ===== 10. 毎フレームのループ =====
+      // ===== 16. 毎フレームのループ =====
       const clock = new THREE.Clock();
 
       function animate() {
@@ -497,7 +854,23 @@
         const elapsed = clock.getElapsedTime();
         frameCount++;
 
-        world.step(1 / 60, dt, 3);
+        // 6が出た瞬間のスローモーション(空中で一瞬静止してからゆっくり降ってくる)
+        let simDt = dt;
+        if (sixSlowMo.active) {
+          sixSlowMo.timer += dt;
+          if (sixSlowMo.phase === 'flight') {
+            simDt = dt;
+            if (sixSlowMo.timer > 0.12) { sixSlowMo.phase = 'freeze'; sixSlowMo.timer = 0; }
+          } else if (sixSlowMo.phase === 'freeze') {
+            simDt = 0;
+            if (sixSlowMo.timer > 0.2) { sixSlowMo.phase = 'slow'; sixSlowMo.timer = 0; }
+          } else if (sixSlowMo.phase === 'slow') {
+            simDt = dt * 0.18;
+            if (sixSlowMo.timer > 1.0) { sixSlowMo.active = false; sixSlowMo.phase = 'idle'; }
+          }
+        }
+
+        if (simDt > 0) world.step(1 / 60, simDt, 3);
         diceMesh.position.copy(diceBody.position);
         diceMesh.quaternion.copy(diceBody.quaternion);
 
@@ -509,7 +882,13 @@
             settleTimer += dt;
             if (settleTimer > 0.4) {
               settled = true;
-              reveal(getTopFace(diceBody));
+              stopDrumRoll();
+              const value = getTopFace(diceBody);
+              const myThrowId = throwId;
+              setTimeout(() => {
+                if (myThrowId !== throwId) return; // 新しく振り直された場合は無視
+                processReveal(value);
+              }, 220); // 溜め(サスペンス)の間
             }
           } else {
             settleTimer = 0;
@@ -545,7 +924,7 @@
         // トレイル(残像)の更新
         for (let i = trailMeshes.length - 1; i >= 0; i--) {
           const t = trailMeshes[i];
-          t.age += dt;
+          t.age += simDt;
           t.mesh.material.opacity = Math.max(0, 0.35 * (1 - t.age / t.life));
           if (t.age >= t.life) {
             scene.remove(t.mesh);
@@ -557,14 +936,14 @@
         // パーティクルバーストの更新
         for (let i = particleSystems.length - 1; i >= 0; i--) {
           const ps = particleSystems[i];
-          ps.age += dt;
+          ps.age += simDt;
           const posAttr = ps.points.geometry.attributes.position;
           for (let j = 0; j < ps.velocities.length; j++) {
             const v = ps.velocities[j];
-            v.y -= 9.8 * dt;
-            posAttr.array[j * 3] += v.x * dt;
-            posAttr.array[j * 3 + 1] += v.y * dt;
-            posAttr.array[j * 3 + 2] += v.z * dt;
+            v.y -= 9.8 * simDt;
+            posAttr.array[j * 3] += v.x * simDt;
+            posAttr.array[j * 3 + 1] += v.y * simDt;
+            posAttr.array[j * 3 + 2] += v.z * simDt;
           }
           posAttr.needsUpdate = true;
           ps.points.material.opacity = Math.max(0, 1 - ps.age / ps.life);
@@ -579,11 +958,11 @@
         // 紙吹雪の更新
         for (let i = confetti.length - 1; i >= 0; i--) {
           const c = confetti[i];
-          c.age += dt;
-          c.vel.y -= 9.8 * dt;
-          c.mesh.position.addScaledVector(c.vel, dt);
-          c.mesh.rotation.x += c.angVel.x * dt;
-          c.mesh.rotation.y += c.angVel.y * dt;
+          c.age += simDt;
+          c.vel.y -= 9.8 * simDt;
+          c.mesh.position.addScaledVector(c.vel, simDt);
+          c.mesh.rotation.x += c.angVel.x * simDt;
+          c.mesh.rotation.y += c.angVel.y * simDt;
           c.mesh.material.opacity = Math.max(0, 1 - c.age / c.life);
           if (c.age >= c.life) {
             scene.remove(c.mesh);
@@ -593,19 +972,30 @@
           }
         }
 
+        // カメラ:ズームパンチ演出(結果発表の瞬間にサイコロへ寄って戻る)
+        const camPos = baseCameraPos.clone();
+        if (zoomPunch.active) {
+          zoomPunch.timer += dt;
+          const p = Math.min(1, zoomPunch.timer / zoomPunch.duration);
+          const curve = Math.sin(p * Math.PI);
+          const dir = diceMesh.position.clone().sub(baseCameraPos).normalize();
+          camPos.addScaledVector(dir, curve * 2.2);
+          if (p >= 1) zoomPunch.active = false;
+        }
+
         // カメラシェイク
         if (shakeTimeRemaining > 0) {
           const ratio = shakeTimeRemaining / shakeDuration;
           const m = shakeMagnitude * ratio;
           camera.position.set(
-            baseCameraPos.x + (Math.random() - 0.5) * m,
-            baseCameraPos.y + (Math.random() - 0.5) * m,
-            baseCameraPos.z + (Math.random() - 0.5) * m
+            camPos.x + (Math.random() - 0.5) * m,
+            camPos.y + (Math.random() - 0.5) * m,
+            camPos.z + (Math.random() - 0.5) * m
           );
           shakeTimeRemaining -= dt;
           if (shakeTimeRemaining <= 0) shakeMagnitude = 0;
         } else {
-          camera.position.copy(baseCameraPos);
+          camera.position.copy(camPos);
         }
         camera.lookAt(0, 0, 0);
 
@@ -613,9 +1003,15 @@
       }
       animate();
 
-      // ===== 11. 操作(クリック/タップ両対応) =====
-      window.addEventListener('click', throwDice);
-      window.addEventListener('touchstart', throwDice, { passive: true });
+      // ===== 17. 操作(クリック/タップ両対応) =====
+      window.addEventListener('click', (e) => {
+        if (e.target === muteBtn) return;
+        throwDice();
+      });
+      window.addEventListener('touchstart', (e) => {
+        if (e.target === muteBtn) return;
+        throwDice();
+      }, { passive: true });
 
       window.addEventListener('resize', () => {
         camera.aspect = window.innerWidth / window.innerHeight;
