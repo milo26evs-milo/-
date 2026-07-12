@@ -657,7 +657,7 @@
         0.1,
         100
       );
-      const baseCameraPos = new THREE.Vector3(0, 6, 8);
+      const baseCameraPos = new THREE.Vector3(0, 6.5, 10.5);
       camera.position.copy(baseCameraPos);
       camera.lookAt(0, 0, 0);
 
@@ -742,12 +742,12 @@
       // マット端の低い木の壁(サイコロが画面外に転がり出ないように跳ね返す)
       const wallMaterial = new CANNON.Material('wall');
       world.addContactMaterial(new CANNON.ContactMaterial(wallMaterial, diceMaterial, {
-        friction: 0.3,
-        restitution: 0.6,
+        friction: 0.35,
+        restitution: 0.4,
       }));
 
       const MAT_HALF = 4.6; // フェルト面を超えないための壁位置の上限
-      const WALL_HEIGHT = 1.3;
+      const WALL_HEIGHT = 1.6;
       const WALL_THICKNESS = 0.5;
       const wallVisualMaterial = new THREE.MeshStandardMaterial({
         map: makeWoodTexture(),
@@ -800,12 +800,14 @@
         camera.updateMatrixWorld(true);
         camera.updateProjectionMatrix();
 
-        const bottomLeft = groundHitAt(-1, -1);
-        const bottomRight = groundHitAt(1, -1);
+        // 画面最下端ぎりぎりではなく、少し余裕を残した高さでサンプリングして
+        // 壁の間隔が狭くなりすぎないようにする
+        const bottomLeft = groundHitAt(-1, -0.8);
+        const bottomRight = groundHitAt(1, -0.8);
         const topCenter = groundHitAt(0, 1);
-        const bottomCenter = groundHitAt(0, -1);
+        const bottomCenter = groundHitAt(0, -0.8);
 
-        const SAFETY = 0.86; // 画面端ぎりぎりにせず少し余裕を持たせる
+        const SAFETY = 0.94; // 画面端ぎりぎりにせず少し余裕を持たせる
         const halfWidth = Math.min(MAT_HALF, Math.min(Math.abs(bottomLeft.x), Math.abs(bottomRight.x)) * SAFETY);
         const nearZ = Math.min(MAT_HALF, bottomCenter.z * SAFETY);
         const farZ = Math.max(-MAT_HALF, topCenter.z * SAFETY);
