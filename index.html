@@ -88,15 +88,6 @@
         animation: popIn 0.45s ease-out forwards;
       }
 
-      #nearMiss {
-        position: fixed; top: 47%; left: 50%; transform: translate(-50%, -50%) scale(0);
-        font-family: sans-serif; font-weight: 800; font-size: 38px; color: #ffab40;
-        text-shadow: 0 0 14px #ffab40; pointer-events: none; display: none; z-index: 6;
-      }
-      #nearMiss.pop {
-        animation: popIn 0.4s ease-out forwards;
-      }
-
       #levelUp {
         position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0);
         font-family: sans-serif; font-weight: 900; font-size: 54px; color: #ffd700;
@@ -176,7 +167,6 @@
     <div id="rarityBadge"></div>
     <div id="result"></div>
     <div id="combo"></div>
-    <div id="nearMiss">😲 おしい!</div>
     <div id="lightning"></div>
     <div id="levelUp">✨ LEVEL UP! ✨</div>
     <div id="hint">🎲 画面をタップ/クリックしてサイコロを振ろう!</div>
@@ -191,7 +181,6 @@
       const flashEl = document.getElementById('flash');
       const statsEl = document.getElementById('stats');
       const rarityEl = document.getElementById('rarityBadge');
-      const nearMissEl = document.getElementById('nearMiss');
       const levelUpEl = document.getElementById('levelUp');
       const lightningEl = document.getElementById('lightning');
       const edgePulseEl = document.getElementById('edgePulse');
@@ -362,7 +351,7 @@
       }
 
       // ===== 0.5 BGM(エレクトロスイング風ループ、Tone.js。外部音源ファイルなし) =====
-      const BGM_VOLUME = 0.22;
+      const BGM_VOLUME = 0.32;
       let audioInitialized = false;
       let bgmBus = null;
       let fanfareBus = null;
@@ -402,7 +391,7 @@
           noise: { type: 'white' },
           envelope: { attack: 0.001, decay: 0.04, sustain: 0 },
         }).connect(hatFilter);
-        hat.volume.value = -16;
+        hat.volume.value = -14;
 
         new Tone.Sequence((time, hit) => {
           if (hit === 'k') kick.triggerAttackRelease('C1', '8n', time);
@@ -426,7 +415,7 @@
           oscillator: { type: 'fatsawtooth', count: 2, spread: 20 },
           envelope: { attack: 0.005, decay: 0.15, sustain: 0.05, release: 0.3 },
         }).connect(bgmBus);
-        chordSynth.volume.value = -14;
+        chordSynth.volume.value = -10;
 
         const BASS_NOTES = [
           ['D2', 'F2', 'A2', 'C3'],
@@ -455,13 +444,16 @@
         Tone.Transport.start();
       }
 
-      function initAudioSystems() {
+      async function initAudioSystems() {
         if (audioInitialized) return;
         audioInitialized = true;
-        const ctx = getAudioCtx();
-        Tone.setContext(ctx);
-        Tone.start();
-        buildBgm();
+        getAudioCtx(); // 既存の効果音用コンテキストも解放しておく
+        try {
+          await Tone.start();
+          buildBgm();
+        } catch (err) {
+          console.error('BGM init failed:', err);
+        }
       }
 
       function duckBgm() {
@@ -625,6 +617,35 @@
         return tex;
       }
 
+      function makeWoodTexture() {
+        const w = 256, h = 64;
+        const canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        const grad = ctx.createLinearGradient(0, 0, 0, h);
+        grad.addColorStop(0, '#7a4b28');
+        grad.addColorStop(0.5, '#5c3a1e');
+        grad.addColorStop(1, '#432a16');
+        ctx.fillStyle = grad;
+        ctx.fillRect(0, 0, w, h);
+        ctx.strokeStyle = 'rgba(0, 0, 0, 0.2)';
+        ctx.lineWidth = 1.5;
+        for (let i = 0; i < 20; i++) {
+          const y = Math.random() * h;
+          ctx.beginPath();
+          ctx.moveTo(0, y);
+          for (let x = 0; x <= w; x += 16) {
+            ctx.lineTo(x, y + (Math.random() - 0.5) * 6);
+          }
+          ctx.stroke();
+        }
+        const tex = new THREE.CanvasTexture(canvas);
+        tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+        tex.repeat.set(4, 1);
+        return tex;
+      }
+
       // ===== 2. three.js: 見た目のセットアップ =====
       const scene = new THREE.Scene();
       const BASE_BG = new THREE.Color(0x0a0a16);
@@ -717,6 +738,47 @@
         angularDamping: 0.25,
       });
       world.addBody(diceBody);
+
+      // マット端の低い木の壁(サイコロが画面外に転がり出ないように跳ね返す)
+      const wallMaterial = new CANNON.Material('wall');
+      world.addContactMaterial(new CANNON.ContactMaterial(wallMaterial, diceMaterial, {
+        friction: 0.3,
+        restitution: 0.6,
+      }));
+
+      const MAT_HALF = 4.6;
+      const WALL_HEIGHT = 1.3;
+      const WALL_THICKNESS = 0.5;
+      const WALL_SPAN = MAT_HALF * 2 + WALL_THICKNESS * 2;
+      const wallVisualMaterial = new THREE.MeshStandardMaterial({
+        map: makeWoodTexture(),
+        roughness: 0.8,
+        metalness: 0.05,
+      });
+
+      function addWall(x, z, sizeX, sizeZ) {
+        const body = new CANNON.Body({
+          type: CANNON.Body.STATIC,
+          shape: new CANNON.Box(new CANNON.Vec3(sizeX / 2, WALL_HEIGHT / 2, sizeZ / 2)),
+          material: wallMaterial,
+          position: new CANNON.Vec3(x, WALL_HEIGHT / 2, z),
+        });
+        world.addBody(body);
+
+        const mesh = new THREE.Mesh(
+          new THREE.BoxGeometry(sizeX, WALL_HEIGHT, sizeZ),
+          wallVisualMaterial
+        );
+        mesh.position.copy(body.position);
+        mesh.castShadow = true;
+        mesh.receiveShadow = true;
+        scene.add(mesh);
+      }
+
+      addWall(-MAT_HALF, 0, WALL_THICKNESS, WALL_SPAN); // 左
+      addWall(MAT_HALF, 0, WALL_THICKNESS, WALL_SPAN); // 右
+      addWall(0, -MAT_HALF, WALL_SPAN, WALL_THICKNESS); // 奥
+      addWall(0, MAT_HALF, WALL_SPAN, WALL_THICKNESS); // 手前
 
       diceBody.addEventListener('collide', (event) => {
         const impact = Math.abs(event.contact.getImpactVelocityAlongNormal());
@@ -926,17 +988,7 @@
         }
       }
 
-      // ===== 11. ニアミス演出(5が出た時) =====
-      function showNearMiss() {
-        nearMissEl.style.display = 'block';
-        nearMissEl.classList.remove('pop');
-        void nearMissEl.offsetWidth;
-        nearMissEl.classList.add('pop');
-        shakeCamera(0.06, 0.2);
-        setTimeout(() => { nearMissEl.style.display = 'none'; }, 1000);
-      }
-
-      // ===== 12. 6連続時の画面演出(虹色パルス&色調変化) =====
+      // ===== 11. 6連続時の画面演出(虹色パルス&色調変化) =====
       let sixStreak = 0;
       function updateSixStreakFX() {
         if (sixStreak >= 3) {
@@ -1007,7 +1059,6 @@
         }
 
         showRarityBadge(rarity);
-        if (value === 5) showNearMiss();
 
         flashScreen(hue);
         const particleCount = Math.min(140, Math.round((value === 6 ? 70 : 35) * mult));
@@ -1046,8 +1097,6 @@
         comboEl.classList.remove('pop');
         rarityEl.style.display = 'none';
         rarityEl.classList.remove('pop');
-        nearMissEl.style.display = 'none';
-        nearMissEl.classList.remove('pop');
         sixSlowMo.active = false;
         sixSlowMo.phase = 'idle';
 
