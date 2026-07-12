@@ -51,6 +51,13 @@
         cursor: pointer;
       }
 
+      #bgmBtn {
+        position: fixed; top: 12px; right: 68px; z-index: 10;
+        background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.25);
+        color: #fff; font-size: 18px; width: 44px; height: 44px; border-radius: 50%;
+        cursor: pointer;
+      }
+
       #result {
         position: fixed; top: 22%; left: 50%; transform: translate(-50%, -50%) scale(0);
         font-family: sans-serif; font-weight: 900; font-size: 140px;
@@ -146,7 +153,8 @@
       {
         "imports": {
           "three": "https://esm.sh/three@0.160.0",
-          "cannon-es": "https://esm.sh/cannon-es@0.20.0"
+          "cannon-es": "https://esm.sh/cannon-es@0.20.0",
+          "tone": "https://esm.sh/tone@14.8.49"
         }
       }
     </script>
@@ -160,6 +168,7 @@
       </div>
     </div>
     <div id="dailyBest"></div>
+    <button id="bgmBtn" aria-label="BGM切り替え">🎵</button>
     <button id="muteBtn" aria-label="ミュート切り替え">🔊</button>
 
     <div id="edgePulse"></div>
@@ -175,6 +184,7 @@
     <script type="module">
       import * as THREE from 'three';
       import * as CANNON from 'cannon-es';
+      import * as Tone from 'tone';
 
       const resultEl = document.getElementById('result');
       const comboEl = document.getElementById('combo');
@@ -189,13 +199,20 @@
       const xpFillEl = document.getElementById('xpFill');
       const xpLabelEl = document.getElementById('xpLabel');
       const muteBtn = document.getElementById('muteBtn');
+      const bgmBtn = document.getElementById('bgmBtn');
 
-      // ===== -1. ミュート設定 =====
+      // ===== -1. ミュート & BGM設定 =====
       let muted = localStorage.getItem('dice_muted') === '1';
+      let bgmEnabled = localStorage.getItem('dice_bgmEnabled') !== '0';
       function updateMuteBtn() {
         muteBtn.textContent = muted ? '🔇' : '🔊';
       }
+      function updateBgmBtn() {
+        bgmBtn.textContent = bgmEnabled ? '🎵' : '🔕';
+        bgmBtn.style.opacity = bgmEnabled ? '1' : '0.5';
+      }
       updateMuteBtn();
+      updateBgmBtn();
       muteBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         muted = !muted;
@@ -205,6 +222,14 @@
           stopDrumRoll();
           if ('speechSynthesis' in window) speechSynthesis.cancel();
         }
+        updateBgmGain();
+      });
+      bgmBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        bgmEnabled = !bgmEnabled;
+        localStorage.setItem('dice_bgmEnabled', bgmEnabled ? '1' : '0');
+        updateBgmBtn();
+        updateBgmGain();
       });
 
       // ===== 0. 効果音(Web Audio API、外部ファイル不要) =====
@@ -264,11 +289,6 @@
         const notes = [523.25, 587.33, 659.25, 698.46, 783.99, 880.0, 987.77];
         for (let i = 0; i < value; i++) {
           playTone(ctx, notes[i % notes.length], now + i * 0.09, 0.18, 'triangle', 0.25);
-        }
-        if (value === 6) {
-          const chord = [1046.5, 1318.5, 1568.0];
-          const chordTime = now + value * 0.09 + 0.05;
-          chord.forEach((f) => playTone(ctx, f, chordTime, 0.5, 'sine', 0.2));
         }
       }
 
@@ -341,6 +361,137 @@
         speechSynthesis.speak(utter);
       }
 
+      // ===== 0.5 BGM(エレクトロスイング風ループ、Tone.js。外部音源ファイルなし) =====
+      const BGM_VOLUME = 0.22;
+      let audioInitialized = false;
+      let bgmBus = null;
+      let fanfareBus = null;
+
+      function getBgmTargetGain() {
+        return bgmEnabled && !muted ? BGM_VOLUME : 0;
+      }
+
+      function updateBgmGain() {
+        if (!bgmBus) return;
+        bgmBus.gain.rampTo(getBgmTargetGain(), 0.3);
+      }
+
+      function buildBgm() {
+        bgmBus = new Tone.Gain(getBgmTargetGain()).toDestination();
+        fanfareBus = new Tone.Gain(0.9).toDestination();
+
+        Tone.Transport.bpm.value = 122;
+        Tone.Transport.swing = 0.55;
+        Tone.Transport.swingSubdivision = '8n';
+
+        // --- スウィングするドラム(キック・クラップ・ハイハット) ---
+        const kick = new Tone.MembraneSynth({
+          pitchDecay: 0.05,
+          octaves: 4,
+          envelope: { attack: 0.001, decay: 0.3, sustain: 0 },
+        }).connect(bgmBus);
+
+        const clapFilter = new Tone.Filter(1500, 'highpass').connect(bgmBus);
+        const clap = new Tone.NoiseSynth({
+          noise: { type: 'white' },
+          envelope: { attack: 0.001, decay: 0.15, sustain: 0 },
+        }).connect(clapFilter);
+
+        const hatFilter = new Tone.Filter(7000, 'highpass').connect(bgmBus);
+        const hat = new Tone.NoiseSynth({
+          noise: { type: 'white' },
+          envelope: { attack: 0.001, decay: 0.04, sustain: 0 },
+        }).connect(hatFilter);
+        hat.volume.value = -16;
+
+        new Tone.Sequence((time, hit) => {
+          if (hit === 'k') kick.triggerAttackRelease('C1', '8n', time);
+          if (hit === 'c') clap.triggerAttackRelease('8n', time);
+        }, ['k', null, null, 'k', null, null, 'c', null], '8n').start(0);
+
+        new Tone.Sequence((time, vel) => {
+          hat.triggerAttackRelease('16n', time, vel);
+        }, [0.5, 0.25, 0.5, 0.25, 0.5, 0.25, 0.5, 0.25], '8n').start(0);
+
+        // --- ウォーキングベース & ジャズ風コード(4小節 ii-V-I-VI 進行) ---
+        const bass = new Tone.MonoSynth({
+          oscillator: { type: 'sawtooth' },
+          filter: { Q: 2, type: 'lowpass', rolloff: -24 },
+          envelope: { attack: 0.02, decay: 0.25, sustain: 0.35, release: 0.2 },
+          filterEnvelope: { attack: 0.01, decay: 0.2, sustain: 0.3, baseFrequency: 200, octaves: 2 },
+        }).connect(bgmBus);
+        bass.volume.value = -6;
+
+        const chordSynth = new Tone.PolySynth(Tone.Synth, {
+          oscillator: { type: 'fatsawtooth', count: 2, spread: 20 },
+          envelope: { attack: 0.005, decay: 0.15, sustain: 0.05, release: 0.3 },
+        }).connect(bgmBus);
+        chordSynth.volume.value = -14;
+
+        const BASS_NOTES = [
+          ['D2', 'F2', 'A2', 'C3'],
+          ['G2', 'B2', 'D3', 'F3'],
+          ['C2', 'E2', 'G2', 'B2'],
+          ['A2', 'C3', 'E3', 'G3'],
+        ];
+        const CHORDS = [
+          ['D3', 'F3', 'A3', 'C4'],
+          ['G3', 'B3', 'D4', 'F4'],
+          ['C3', 'E3', 'G3', 'B3'],
+          ['A3', 'C4', 'E4', 'G4'],
+        ];
+
+        new Tone.Sequence((time, step) => {
+          const bar = Math.floor(step / 8);
+          const posInBar = step % 8;
+          if (posInBar % 2 === 0) {
+            bass.triggerAttackRelease(BASS_NOTES[bar][posInBar / 2], '8n', time);
+          }
+          if (posInBar === 3 || posInBar === 6) {
+            chordSynth.triggerAttackRelease(CHORDS[bar], '16n', time);
+          }
+        }, Array.from({ length: 32 }, (_, i) => i), '8n').start(0);
+
+        Tone.Transport.start();
+      }
+
+      function initAudioSystems() {
+        if (audioInitialized) return;
+        audioInitialized = true;
+        const ctx = getAudioCtx();
+        Tone.setContext(ctx);
+        Tone.start();
+        buildBgm();
+      }
+
+      function duckBgm() {
+        if (!bgmBus) return;
+        const target = getBgmTargetGain();
+        const now = Tone.now();
+        bgmBus.gain.cancelScheduledValues(now);
+        bgmBus.gain.setValueAtTime(bgmBus.gain.value, now);
+        bgmBus.gain.linearRampToValueAtTime(target * 0.12, now + 0.08);
+        bgmBus.gain.setValueAtTime(target * 0.12, now + 1.0);
+        bgmBus.gain.linearRampToValueAtTime(target, now + 1.6);
+      }
+
+      // 6が出た瞬間の派手なファンファーレ(鳴っている間はBGMをダッキング)
+      function playSixFanfareTone() {
+        if (muted) return;
+        if (!fanfareBus) return;
+        duckBgm();
+        const synth = new Tone.PolySynth(Tone.Synth, {
+          oscillator: { type: 'sawtooth' },
+          envelope: { attack: 0.005, decay: 0.2, sustain: 0.25, release: 0.6 },
+        }).connect(fanfareBus);
+        const now = Tone.now();
+        ['C5', 'E5', 'G5', 'C6'].forEach((n, i) => {
+          synth.triggerAttackRelease(n, '16n', now + i * 0.09);
+        });
+        synth.triggerAttackRelease(['C5', 'E5', 'G5', 'C6'], '2n', now + 0.42);
+        setTimeout(() => synth.dispose(), 2200);
+      }
+
       // ===== 1. サイコロの目のテクスチャ(キャンバスで生成、ネオン風) =====
       const PIP = {
         tl: [0.27, 0.27], tr: [0.73, 0.27],
@@ -395,22 +546,82 @@
       }
 
       function makeGroundTexture() {
+        const size = 1024;
         const canvas = document.createElement('canvas');
-        canvas.width = canvas.height = 512;
+        canvas.width = canvas.height = size;
         const ctx = canvas.getContext('2d');
-        ctx.fillStyle = '#05050a';
-        ctx.fillRect(0, 0, 512, 512);
-        ctx.strokeStyle = 'rgba(0, 255, 255, 0.35)';
+
+        // 外枠:カジノのクラップス台のような濃い赤の革張り風レール
+        ctx.fillStyle = '#3a0a10';
+        ctx.fillRect(0, 0, size, size);
+        const railGrad = ctx.createLinearGradient(0, 0, size, size);
+        railGrad.addColorStop(0, '#5c1018');
+        railGrad.addColorStop(0.5, '#3a0a10');
+        railGrad.addColorStop(1, '#4a0d14');
+        ctx.fillStyle = railGrad;
+        ctx.fillRect(0, 0, size, size);
+
+        // 内側:濃い緑のフェルト
+        const rail = 70;
+        const feltGrad = ctx.createRadialGradient(
+          size / 2, size / 2, size * 0.1,
+          size / 2, size / 2, size * 0.75
+        );
+        feltGrad.addColorStop(0, '#0f5c34');
+        feltGrad.addColorStop(0.7, '#0b4a2a');
+        feltGrad.addColorStop(1, '#083a20');
+        ctx.fillStyle = feltGrad;
+        ctx.fillRect(rail, rail, size - rail * 2, size - rail * 2);
+
+        // フェルト表面のノイズ(安っぽく見えないように質感を追加)
+        const noiseCount = 9000;
+        for (let i = 0; i < noiseCount; i++) {
+          const x = rail + Math.random() * (size - rail * 2);
+          const y = rail + Math.random() * (size - rail * 2);
+          const shade = Math.random() < 0.5 ? 255 : 0;
+          ctx.fillStyle = `rgba(${shade}, ${shade}, ${shade}, ${Math.random() * 0.05})`;
+          ctx.fillRect(x, y, 1.4, 1.4);
+        }
+
+        // 金の縁取り(ステッチ風の破線を二重に)
+        ctx.strokeStyle = 'rgba(212, 175, 55, 0.85)';
+        ctx.lineWidth = 3;
+        ctx.setLineDash([14, 10]);
+        ctx.strokeRect(rail - 22, rail - 22, size - (rail - 22) * 2, size - (rail - 22) * 2);
+        ctx.setLineDash([]);
+        ctx.lineWidth = 4;
+        ctx.strokeStyle = 'rgba(212, 175, 55, 0.6)';
+        ctx.strokeRect(rail, rail, size - rail * 2, size - rail * 2);
+
+        // 装飾ライン(パスラインを思わせるアーチ)
+        ctx.strokeStyle = 'rgba(255, 236, 179, 0.18)';
+        ctx.lineWidth = 6;
+        ctx.beginPath();
+        ctx.arc(size / 2, size * 1.05, size * 0.55, Math.PI * 1.15, Math.PI * 1.85);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(size / 2, size * -0.05, size * 0.55, Math.PI * 0.15, Math.PI * 0.85);
+        ctx.stroke();
+
+        // 中央にさりげないロゴ風のライン装飾
+        ctx.strokeStyle = 'rgba(255, 215, 0, 0.15)';
         ctx.lineWidth = 2;
-        for (let x = 0; x <= 512; x += 32) {
-          ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, 512); ctx.stroke();
-        }
-        for (let y = 0; y <= 512; y += 32) {
-          ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(512, y); ctx.stroke();
-        }
+        ctx.beginPath();
+        ctx.arc(size / 2, size / 2, size * 0.16, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // 全体にわずかなビネットを乗せて安っぽさを消す
+        const vignette = ctx.createRadialGradient(
+          size / 2, size / 2, size * 0.3,
+          size / 2, size / 2, size * 0.72
+        );
+        vignette.addColorStop(0, 'rgba(0,0,0,0)');
+        vignette.addColorStop(1, 'rgba(0,0,0,0.35)');
+        ctx.fillStyle = vignette;
+        ctx.fillRect(0, 0, size, size);
+
         const tex = new THREE.CanvasTexture(canvas);
-        tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-        tex.repeat.set(2, 2);
+        tex.colorSpace = THREE.SRGBColorSpace;
         return tex;
       }
 
@@ -448,10 +659,8 @@
         new THREE.PlaneGeometry(10, 10),
         new THREE.MeshStandardMaterial({
           map: makeGroundTexture(),
-          roughness: 0.85,
-          metalness: 0.2,
-          emissive: 0x001122,
-          emissiveIntensity: 0.3,
+          roughness: 0.92,
+          metalness: 0.05,
         })
       );
       groundMesh.rotation.x = -Math.PI / 2;
@@ -479,10 +688,20 @@
       const world = new CANNON.World({
         gravity: new CANNON.Vec3(0, -9.82, 0),
       });
+      world.solver.iterations = 20; // 高速回転でも安定させる
+
+      const groundMaterial = new CANNON.Material('ground');
+      const diceMaterial = new CANNON.Material('dice');
+      // 勢いよくバウンドしてから転がって徐々に止まる、気持ちいい挙動に調整
+      world.addContactMaterial(new CANNON.ContactMaterial(groundMaterial, diceMaterial, {
+        friction: 0.4,
+        restitution: 0.42,
+      }));
 
       const groundBody = new CANNON.Body({
         type: CANNON.Body.STATIC,
         shape: new CANNON.Plane(),
+        material: groundMaterial,
       });
       groundBody.quaternion.setFromEuler(-Math.PI / 2, 0, 0);
       world.addBody(groundBody);
@@ -493,6 +712,9 @@
           new CANNON.Vec3(diceSize / 2, diceSize / 2, diceSize / 2)
         ),
         position: new CANNON.Vec3(0, 5, 0),
+        material: diceMaterial,
+        linearDamping: 0.1,
+        angularDamping: 0.25,
       });
       world.addBody(diceBody);
 
@@ -796,7 +1018,10 @@
         triggerZoomPunch();
         playResultFanfare(value);
         speak(value);
-        if (value === 6) triggerSixSlowMo();
+        if (value === 6) {
+          triggerSixSlowMo();
+          playSixFanfareTone();
+        }
 
         gainXp(10 + comboCount * 3 + RARITY_XP[rarity] + (value === 6 ? 15 : 0));
 
@@ -813,7 +1038,7 @@
       const trailMeshes = [];
 
       function throwDice() {
-        getAudioCtx();
+        initAudioSystems();
         throwId++;
         resultEl.style.display = 'none';
         resultEl.classList.remove('pop');
@@ -827,11 +1052,12 @@
         sixSlowMo.phase = 'idle';
 
         diceBody.position.set(0, 5, 0);
-        diceBody.velocity.set(0, 0, 0);
+        // 空中で非常に速く回転させ、着地後もその勢いでよく転がるようにする
+        diceBody.velocity.set((Math.random() - 0.5) * 4, 0, (Math.random() - 0.5) * 4);
         diceBody.angularVelocity.set(
-          (Math.random() - 0.5) * 15,
-          (Math.random() - 0.5) * 15,
-          (Math.random() - 0.5) * 15
+          (Math.random() - 0.5) * 32,
+          (Math.random() - 0.5) * 32,
+          (Math.random() - 0.5) * 32
         );
         diceBody.quaternion.setFromEuler(
           Math.random() * Math.PI * 2,
@@ -1005,11 +1231,11 @@
 
       // ===== 17. 操作(クリック/タップ両対応) =====
       window.addEventListener('click', (e) => {
-        if (e.target === muteBtn) return;
+        if (e.target === muteBtn || e.target === bgmBtn) return;
         throwDice();
       });
       window.addEventListener('touchstart', (e) => {
-        if (e.target === muteBtn) return;
+        if (e.target === muteBtn || e.target === bgmBtn) return;
         throwDice();
       }, { passive: true });
 
