@@ -746,16 +746,17 @@
         restitution: 0.6,
       }));
 
-      const MAT_HALF = 4.6;
+      const MAT_HALF = 4.6; // フェルト面を超えないための壁位置の上限
       const WALL_HEIGHT = 1.3;
       const WALL_THICKNESS = 0.5;
-      const WALL_SPAN = MAT_HALF * 2 + WALL_THICKNESS * 2;
       const wallVisualMaterial = new THREE.MeshStandardMaterial({
         map: makeWoodTexture(),
         roughness: 0.8,
         metalness: 0.05,
       });
 
+      const wallBodies = [];
+      const wallMeshes = [];
       function addWall(x, z, sizeX, sizeZ) {
         const body = new CANNON.Body({
           type: CANNON.Body.STATIC,
@@ -764,6 +765,7 @@
           position: new CANNON.Vec3(x, WALL_HEIGHT / 2, z),
         });
         world.addBody(body);
+        wallBodies.push(body);
 
         const mesh = new THREE.Mesh(
           new THREE.BoxGeometry(sizeX, WALL_HEIGHT, sizeZ),
@@ -773,12 +775,49 @@
         mesh.castShadow = true;
         mesh.receiveShadow = true;
         scene.add(mesh);
+        wallMeshes.push(mesh);
       }
 
-      addWall(-MAT_HALF, 0, WALL_THICKNESS, WALL_SPAN); // 左
-      addWall(MAT_HALF, 0, WALL_THICKNESS, WALL_SPAN); // 右
-      addWall(0, -MAT_HALF, WALL_SPAN, WALL_THICKNESS); // 奥
-      addWall(0, MAT_HALF, WALL_SPAN, WALL_THICKNESS); // 手前
+      // スマホの縦長画面などアスペクト比が狭いと、カメラの水平視野が
+      // 垂直視野より大幅に狭くなり、固定位置の壁では画面外に出てしまう。
+      // 画面四隅から地面(y=0)へレイを飛ばし、実際に見えている範囲に
+      // 合わせて壁の位置を動的に決める。
+      const groundPlaneForRay = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+      const wallRaycaster = new THREE.Raycaster();
+      function groundHitAt(ndcX, ndcY) {
+        wallRaycaster.setFromCamera(new THREE.Vector2(ndcX, ndcY), camera);
+        const hit = new THREE.Vector3();
+        wallRaycaster.ray.intersectPlane(groundPlaneForRay, hit);
+        return hit;
+      }
+
+      function rebuildWalls() {
+        wallBodies.forEach((b) => world.removeBody(b));
+        wallMeshes.forEach((m) => scene.remove(m));
+        wallBodies.length = 0;
+        wallMeshes.length = 0;
+
+        camera.updateMatrixWorld(true);
+        camera.updateProjectionMatrix();
+
+        const bottomLeft = groundHitAt(-1, -1);
+        const bottomRight = groundHitAt(1, -1);
+        const topCenter = groundHitAt(0, 1);
+        const bottomCenter = groundHitAt(0, -1);
+
+        const SAFETY = 0.86; // 画面端ぎりぎりにせず少し余裕を持たせる
+        const halfWidth = Math.min(MAT_HALF, Math.min(Math.abs(bottomLeft.x), Math.abs(bottomRight.x)) * SAFETY);
+        const nearZ = Math.min(MAT_HALF, bottomCenter.z * SAFETY);
+        const farZ = Math.max(-MAT_HALF, topCenter.z * SAFETY);
+        const depth = nearZ - farZ;
+        const centerZ = (nearZ + farZ) / 2;
+
+        addWall(-halfWidth, centerZ, WALL_THICKNESS, depth + WALL_THICKNESS * 2); // 左
+        addWall(halfWidth, centerZ, WALL_THICKNESS, depth + WALL_THICKNESS * 2); // 右
+        addWall(0, farZ, halfWidth * 2 + WALL_THICKNESS * 2, WALL_THICKNESS); // 奥
+        addWall(0, nearZ, halfWidth * 2 + WALL_THICKNESS * 2, WALL_THICKNESS); // 手前
+      }
+      rebuildWalls();
 
       diceBody.addEventListener('collide', (event) => {
         const impact = Math.abs(event.contact.getImpactVelocityAlongNormal());
@@ -1292,6 +1331,7 @@
         camera.aspect = window.innerWidth / window.innerHeight;
         camera.updateProjectionMatrix();
         renderer.setSize(window.innerWidth, window.innerHeight);
+        rebuildWalls();
       });
     </script>
   </body>
